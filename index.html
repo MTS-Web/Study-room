@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="theme-color" content="#f6f8f3">
+	<title>Studyroom | Your AI study desk</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+	<script src="https://unpkg.com/lucide@latest"></script>
+	<style>
+		:root {
+			color-scheme: light;
+			--ink: #172a25;
+			--muted: #77837d;
+			--line: #e5eae4;
+			--paper: #ffffff;
+			--canvas: #f6f8f3;
+			--green: #246b50;
+			--green-dark: #194e3b;
+			--mint: #e7f2e9;
+			--lime: #c8ed78;
+			--coral: #ed765a;
+			--yellow: #f4cf69;
+			--shadow: 0 16px 42px rgba(32, 56, 45, .07);
+		}
+		* { box-sizing: border-box; }
+		body { margin: 0; background: var(--canvas); color: var(--ink); font-family: "DM Sans", sans-serif; min-height: 100vh; }
+		button, input, textarea { font: inherit; }
+		button { color: inherit; }
+		.app { min-height: 100vh; display: grid; grid-template-columns: 246px minmax(0, 1fr); }
+		.sidebar { background: #fff; border-right: 1px solid var(--line); padding: 25px 17px 18px; display: flex; flex-direction: column; gap: 28px; }
+		.brand { display: flex; align-items: center; gap: 10px; padding: 0 8px; font: 800 18px Manrope, sans-serif; letter-spacing: 0; }
+		.brand-mark { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 10px; background: var(--green); color: white; }
+		.brand-mark i { width: 18px; height: 18px; }
+		.nav-label { color: #9aa49e; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; padding: 0 11px; margin-bottom: 8px; }
+		.nav-list { display: grid; gap: 4px; }
+		.nav-link { width: 100%; display: flex; align-items: center; gap: 11px; border: 0; padding: 10px 11px; background: transparent; border-radius: 8px; color: #67746d; cursor: pointer; text-align: left; font-size: 13px; }
+		.nav-link i { width: 17px; height: 17px; }
+		.nav-link.active { background: var(--mint); color: var(--green-dark); font-weight: 700; }
+		.nav-link:hover:not(.active) { background: #f5f7f4; }
+		.history-section { min-height: 0; }
+		.history-title-row { display: flex; align-items: center; justify-content: space-between; }
+		.history-title-row .nav-label { margin-bottom: 8px; }
+		.new-chat-button { display: grid; place-items: center; width: 27px; height: 27px; margin: -6px 6px 0 0; border: 1px solid var(--line); border-radius: 7px; background: white; color: var(--green); cursor: pointer; }
+		.new-chat-button:hover { background: var(--mint); }
+		.new-chat-button i { width: 14px; height: 14px; }
+		.history-list { display: grid; gap: 3px; max-height: 205px; overflow-y: auto; }
+		.history-empty { padding: 8px 10px; color: #99a39c; font-size: 10px; line-height: 1.5; }
+		.history-item { width: 100%; min-width: 0; padding: 8px 10px; border: 0; border-radius: 7px; background: transparent; color: #67746d; cursor: pointer; text-align: left; }
+		.history-item:hover, .history-item.active { background: #f2f6f0; color: var(--green-dark); }
+		.history-item strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; font-weight: 600; }
+		.history-item span { display: block; margin-top: 3px; color: #98a29b; font-size: 9px; }
+		.side-divider { border-top: 1px solid var(--line); margin-top: -12px; }
+		.course { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; font-size: 12px; color: #526057; }
+		.course-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--coral); }
+		.course-dot.gold { background: var(--yellow); }
+		.course-dot.blue { background: #67a7bb; }
+		.sidebar-bottom { margin-top: auto; border: 1px solid var(--line); background: #fbfcfa; border-radius: 10px; padding: 13px; }
+		.privacy-title { display: flex; align-items: center; gap: 7px; font-weight: 700; font-size: 11px; }
+		.privacy-title i { width: 14px; color: var(--green); }
+		.privacy-copy { color: var(--muted); font-size: 10px; line-height: 1.6; margin: 8px 0 0; }
+		.main { min-width: 0; padding: 0 34px 32px; }
+		.topbar { height: 72px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
+		.breadcrumb { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
+		.breadcrumb strong { color: var(--ink); font-weight: 600; }
+		.top-actions { display: flex; align-items: center; gap: 10px; }
+		.model-state { display: flex; align-items: center; gap: 8px; color: #69776f; font-size: 11px; }
+		.state-dot { width: 7px; height: 7px; border-radius: 50%; background: #b8c1bb; }
+		.state-dot.ready { background: #56a873; box-shadow: 0 0 0 3px #e0f1e4; }
+		.state-dot.loading { background: var(--yellow); }
+		.button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--line); border-radius: 8px; padding: 9px 13px; background: white; cursor: pointer; font-size: 12px; font-weight: 700; transition: transform .15s, background .15s; }
+		.button:hover { transform: translateY(-1px); background: #f8faf7; }
+		.button i { width: 15px; height: 15px; }
+		.button.primary { background: var(--green); color: white; border-color: var(--green); }
+		.button.primary:hover { background: var(--green-dark); }
+		.button:disabled { opacity: .5; cursor: wait; transform: none; }
+		.account-button { max-width: 175px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+		dialog.auth-dialog { width: min(420px, calc(100vw - 28px)); padding: 0; border: 1px solid var(--line); border-radius: 12px; color: var(--ink); box-shadow: 0 24px 70px rgba(21, 44, 33, .2); }
+		dialog.auth-dialog::backdrop { background: rgba(20, 37, 29, .42); backdrop-filter: blur(2px); }
+		.auth-content { padding: 22px; }
+		.auth-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+		.auth-heading h2 { margin: 0; font: 700 19px Manrope, sans-serif; }
+		.auth-heading p { margin: 6px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+		.auth-close { width: 30px; height: 30px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 7px; background: white; cursor: pointer; }
+		.auth-close i { width: 15px; height: 15px; }
+		.auth-form { display: grid; gap: 12px; margin-top: 19px; }
+		.auth-form label { display: grid; gap: 5px; color: #57665d; font-size: 10px; font-weight: 700; }
+		.auth-form input { width: 100%; padding: 10px 11px; border: 1px solid #dce4dd; border-radius: 7px; outline: 0; font-size: 12px; }
+		.auth-form input:focus { border-color: #8bb29a; box-shadow: 0 0 0 3px #eaf3e9; }
+		.auth-message { min-height: 16px; margin: 12px 0 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
+		.auth-footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 14px; }
+		.text-button { padding: 6px 0; border: 0; background: transparent; color: var(--green); cursor: pointer; font-size: 10px; font-weight: 700; }
+		.account-info { margin-top: 18px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: #fbfcfa; font-size: 11px; }
+		.account-info span { display: block; margin-top: 4px; color: var(--muted); overflow-wrap: anywhere; }
+		.page-heading { display: flex; justify-content: space-between; align-items: end; gap: 20px; padding: 27px 0 20px; }
+		.eyebrow { color: var(--green); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.3px; }
+		h1 { font: 800 27px Manrope, sans-serif; letter-spacing: 0; margin: 6px 0 5px; }
+		.subtitle { color: var(--muted); font-size: 12px; margin: 0; }
+		.date-label { color: var(--muted); font-size: 11px; white-space: nowrap; }
+		.study-tools { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 11px; margin-bottom: 17px; }
+		.tool-card { position: relative; display: flex; align-items: center; gap: 11px; min-height: 67px; border: 1px solid var(--line); border-radius: 9px; background: white; padding: 12px; text-align: left; cursor: pointer; transition: border-color .15s, transform .15s, box-shadow .15s; }
+		.tool-card:hover { border-color: #a9c7b2; transform: translateY(-2px); box-shadow: 0 8px 18px rgba(32, 56, 45, .06); }
+		.tool-icon { flex: 0 0 34px; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 9px; background: #eaf4e9; color: var(--green); }
+		.tool-icon.coral { background: #fff0eb; color: #d76347; }
+		.tool-icon.yellow { background: #fff7df; color: #9a741c; }
+		.tool-icon.blue { background: #eaf3f6; color: #397a8a; }
+		.tool-icon i { width: 17px; height: 17px; }
+		.tool-copy strong { display: block; font-size: 11px; margin-bottom: 3px; }
+		.tool-copy span { display: block; color: var(--muted); font-size: 10px; }
+		.workspace { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(255px, .8fr); gap: 16px; align-items: stretch; min-height: 550px; }
+		.panel { border: 1px solid var(--line); border-radius: 10px; background: var(--paper); box-shadow: var(--shadow); min-width: 0; }
+		.chat-panel { display: flex; flex-direction: column; min-height: 550px; overflow: hidden; }
+		.panel-head { min-height: 57px; padding: 0 17px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
+		.panel-heading { display: flex; align-items: center; gap: 9px; font-size: 12px; font-weight: 700; }
+		.panel-heading i { width: 17px; color: var(--green); }
+		.small-muted { color: var(--muted); font-size: 10px; }
+		.chat-log { padding: 19px 18px; display: flex; flex-direction: column; gap: 17px; flex: 1; overflow-y: auto; max-height: 410px; }
+		.message { display: flex; gap: 10px; align-items: flex-start; max-width: 100%; animation: rise .24s ease-out; }
+		@keyframes rise { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+		.avatar { flex: 0 0 27px; width: 27px; height: 27px; display: grid; place-items: center; border-radius: 8px; background: var(--green); color: white; }
+		.avatar i { width: 14px; height: 14px; }
+		.message.user { flex-direction: row-reverse; }
+		.message.user .avatar { color: var(--ink); background: var(--lime); }
+		.bubble { border-radius: 3px 9px 9px 9px; background: #f5f7f3; padding: 10px 12px; max-width: min(680px, calc(100% - 37px)); color: #35443c; font-size: 12px; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
+		.message.user .bubble { background: #eaf3e8; border-radius: 9px 3px 9px 9px; }
+		.bubble strong { color: var(--ink); }
+		.assistant-content { min-width: 0; flex: 1; }
+		.thinking-status { display: flex; align-items: center; gap: 6px; min-height: 18px; margin: 1px 0 7px; color: #637269; font-size: 10px; }
+		.thinking-dots { display: inline-flex; gap: 3px; }
+		.thinking-dots span { width: 3px; height: 3px; border-radius: 50%; background: var(--green); animation: think-pulse 1.1s infinite ease-in-out; }
+		.thinking-dots span:nth-child(2) { animation-delay: .16s; }
+		.thinking-dots span:nth-child(3) { animation-delay: .32s; }
+		@keyframes think-pulse { 0%, 60%, 100% { opacity: .3; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
+		.thinking-timer { margin-left: 2px; color: #909b93; font-variant-numeric: tabular-nums; }
+		.thinking-details { width: fit-content; margin: 1px 0 9px; color: #647168; font-size: 10px; }
+		.thinking-details summary { display: flex; align-items: center; gap: 6px; width: fit-content; cursor: pointer; color: var(--green); font-weight: 700; }
+		.thinking-details summary i { width: 13px; height: 13px; }
+		.activity-list { display: grid; gap: 5px; margin: 8px 0 2px; padding-left: 17px; color: #748078; line-height: 1.5; }
+		.activity-list li::marker { color: #85a58e; }
+		@media (prefers-reduced-motion: reduce) { .thinking-dots span { animation: none; } }
+		.welcome { width: 100%; padding: 6px 2px 10px; }
+		.welcome-title { font: 700 17px Manrope, sans-serif; margin: 0 0 7px; }
+		.welcome p { color: var(--muted); font-size: 12px; margin: 0; line-height: 1.6; }
+		.suggestions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 13px; }
+		.suggestion { border: 1px solid #dfe8df; background: white; border-radius: 20px; padding: 7px 10px; cursor: pointer; color: #50645a; font-size: 10px; }
+		.suggestion:hover { border-color: #9fbea7; color: var(--green-dark); }
+		.composer-wrap { border-top: 1px solid var(--line); padding: 13px 15px 12px; }
+		.composer { display: flex; align-items: end; gap: 8px; padding: 7px 7px 7px 12px; border: 1px solid #dce4dd; border-radius: 9px; background: #fff; }
+		.composer:focus-within { border-color: #8bb29a; box-shadow: 0 0 0 3px #eaf3e9; }
+		textarea { resize: none; width: 100%; min-height: 30px; max-height: 110px; border: 0; outline: 0; color: var(--ink); font-size: 12px; line-height: 1.5; padding: 5px 0; }
+		textarea::placeholder { color: #9aa49e; }
+		.send-button { flex: 0 0 34px; width: 34px; height: 34px; display: grid; place-items: center; border: 0; border-radius: 7px; background: var(--green); color: #fff; cursor: pointer; }
+		.send-button:hover { background: var(--green-dark); }
+		.send-button:disabled { opacity: .45; cursor: not-allowed; }
+		.send-button i { width: 16px; height: 16px; }
+		.composer-note { display: flex; justify-content: space-between; gap: 12px; margin: 8px 2px 0; color: #98a29b; font-size: 9px; }
+		.sources-panel { display: flex; flex-direction: column; }
+		.source-content { padding: 15px; display: flex; flex-direction: column; gap: 14px; }
+		.dropzone { border: 1px dashed #a7c3ad; background: #f8fbf6; border-radius: 9px; padding: 18px 12px; text-align: center; cursor: pointer; transition: background .15s, border-color .15s; }
+		.dropzone:hover, .dropzone.dragover { border-color: var(--green); background: #eef6eb; }
+		.upload-mark { width: 37px; height: 37px; display: grid; place-items: center; border-radius: 11px; margin: 0 auto 9px; background: var(--mint); color: var(--green); }
+		.upload-mark i { width: 18px; height: 18px; }
+		.dropzone strong { display: block; font-size: 11px; }
+		.dropzone p { color: var(--muted); font-size: 10px; line-height: 1.5; margin: 5px 0 0; }
+		.dropzone input { display: none; }
+		.source-title-row { display: flex; align-items: center; justify-content: space-between; color: #647168; font-size: 10px; font-weight: 700; }
+		.source-count { color: #96a19a; font-weight: 500; }
+		.source-list { display: grid; gap: 7px; }
+		.empty-source { padding: 14px 8px; text-align: center; color: #99a39c; font-size: 10px; border: 1px solid #eef1ed; border-radius: 8px; }
+		.source-item { display: flex; align-items: center; gap: 9px; padding: 9px; border: 1px solid #e8ede7; border-radius: 8px; min-width: 0; }
+		.file-icon { flex: 0 0 29px; width: 29px; height: 31px; display: grid; place-items: center; background: #fff0e9; border-radius: 6px; color: #c96c4e; }
+		.file-icon i { width: 15px; height: 15px; }
+		.file-meta { min-width: 0; flex: 1; }
+		.file-meta strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; }
+		.file-meta span { display: block; margin-top: 3px; color: var(--muted); font-size: 9px; }
+		.remove-file { border: 0; background: transparent; padding: 4px; color: #9ba59e; cursor: pointer; }
+		.remove-file:hover { color: #bd5847; }
+		.remove-file i { width: 14px; height: 14px; }
+		.source-callout { border-top: 1px solid var(--line); margin-top: auto; padding: 13px 15px 15px; color: #748078; font-size: 10px; line-height: 1.6; }
+		.source-callout strong { color: var(--green-dark); }
+		.toast { position: fixed; z-index: 5; bottom: 22px; left: 50%; transform: translate(-50%, 20px); opacity: 0; pointer-events: none; background: #20372d; color: #fff; border-radius: 8px; padding: 10px 14px; font-size: 11px; box-shadow: var(--shadow); transition: .2s; }
+		.toast.show { opacity: 1; transform: translate(-50%, 0); }
+		.progress-track { height: 3px; background: #e6eee6; position: absolute; inset: auto 0 0; display: none; }
+		.progress-track span { display: block; height: 100%; width: 0; background: var(--green); transition: width .2s; }
+		.topbar { position: relative; }
+		.topbar.loading .progress-track { display: block; }
+		.mobile-menu { display: none; }
+		@media (max-width: 1000px) {
+			.app { grid-template-columns: 210px minmax(0, 1fr); }
+			.main { padding-inline: 23px; }
+			.workspace { grid-template-columns: minmax(0, 1.4fr) minmax(225px, .8fr); }
+			.tool-card { gap: 8px; padding: 9px; }
+			.tool-icon { flex-basis: 30px; width: 30px; height: 30px; }
+		}
+		@media (max-width: 760px) {
+			.app { display: block; }
+			.sidebar { position: fixed; z-index: 4; inset: 0 auto 0 0; width: 246px; transform: translateX(-102%); transition: transform .2s; box-shadow: var(--shadow); }
+			.sidebar.open { transform: translateX(0); }
+			.main { padding: 0 16px 22px; }
+			.topbar { height: 62px; }
+			.mobile-menu { display: grid; place-items: center; width: 35px; height: 35px; background: white; border: 1px solid var(--line); border-radius: 8px; }
+			.breadcrumb { margin-right: auto; margin-left: 10px; }
+			.top-actions { gap: 7px; }
+			.model-state span:last-child { display: none; }
+			.button { padding: 8px 9px; }
+			.account-button { width: 34px; height: 34px; padding: 0; font-size: 0; }
+			.account-button i { width: 16px; height: 16px; }
+			.page-heading { padding-top: 22px; }
+			.date-label { display: none; }
+			.study-tools { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+			.workspace { grid-template-columns: 1fr; }
+			.chat-panel { min-height: 480px; }
+			.chat-log { max-height: 380px; }
+			.sources-panel { order: -1; }
+			.source-content { display: grid; grid-template-columns: minmax(150px, .9fr) minmax(0, 1.1fr); align-items: start; }
+			.source-title-row { grid-column: 2; grid-row: 1; }
+			.source-list { grid-column: 2; }
+			.source-callout { display: none; }
+			.dropzone { grid-column: 1; grid-row: 1 / span 2; height: 100%; min-height: 115px; display: flex; flex-direction: column; justify-content: center; }
+		}
+		@media (max-width: 430px) {
+			.main { padding-inline: 11px; }
+			h1 { font-size: 23px; }
+			.tool-copy span { font-size: 9px; }
+			.source-content { grid-template-columns: 1fr; }
+			.dropzone { grid-column: 1; grid-row: auto; min-height: 100px; }
+			.source-title-row, .source-list { grid-column: 1; }
+			.source-title-row { grid-row: auto; }
+			.workspace { gap: 11px; }
+			.panel-head { padding-inline: 12px; }
+			.chat-log { padding-inline: 12px; }
+			.composer-wrap { padding-inline: 10px; }
+			.composer-note span:last-child { display: none; }
+		}
+	</style>
+</head>
+<body>
+	<div class="app">
+		<aside class="sidebar" id="sidebar">
+			<div class="brand"><span class="brand-mark"><i data-lucide="book-open-check"></i></span>studyroom</div>
+			<div>
+				<div class="nav-label">Workspace</div>
+				<nav class="nav-list" aria-label="Main navigation">
+					<button class="nav-link active" type="button"><i data-lucide="messages-square"></i>AI tutor</button>
+					<button class="nav-link" type="button" data-tool="flashcards"><i data-lucide="layers-2"></i>Flashcards</button>
+					<button class="nav-link" type="button" data-tool="quiz"><i data-lucide="circle-help"></i>Practice quiz</button>
+					<button class="nav-link" type="button" data-tool="exam"><i data-lucide="file-check-2"></i>Exam builder</button>
+				</nav>
+			</div>
+			<div class="history-section">
+				<div class="history-title-row"><div class="nav-label">Recent chats</div><button class="new-chat-button" id="newChatButton" type="button" aria-label="Start a new chat" title="Start a new chat"><i data-lucide="plus"></i></button></div>
+				<div class="history-list" id="historyList"><div class="history-empty">Sign in to sync conversations across devices.</div></div>
+			</div>
+			<div class="side-divider"></div>
+			<div>
+				<div class="nav-label">Study subjects</div>
+				<div class="course"><span class="course-dot"></span>Biology</div>
+				<div class="course"><span class="course-dot gold"></span>World history</div>
+				<div class="course"><span class="course-dot blue"></span>Spanish</div>
+			</div>
+			<div class="sidebar-bottom">
+				<div class="privacy-title"><i data-lucide="shield-check"></i>Your study stays yours</div>
+				<p class="privacy-copy">Files are processed in this browser and are not sent to an AI provider. Clear this tab to remove them.</p>
+			</div>
+		</aside>
+
+		<main class="main">
+			<header class="topbar" id="topbar">
+				<div class="progress-track"><span id="modelProgress"></span></div>
+				<button class="mobile-menu" id="menuButton" aria-label="Open menu" type="button"><i data-lucide="menu"></i></button>
+				<div class="breadcrumb">Study desk <span>/</span> <strong>AI tutor</strong></div>
+				<div class="top-actions">
+					<div class="model-state"><span class="state-dot" id="stateDot"></span><span id="modelStatus">AI not loaded</span></div>
+					<button class="button account-button" id="accountButton" type="button" aria-label="Sign in to sync chat history" title="Sign in to sync chat history"><i data-lucide="user-round"></i><span>Sign in</span></button>
+					<button class="button primary" id="loadModel" type="button"><i data-lucide="cpu"></i><span>Load local AI</span></button>
+				</div>
+			</header>
+
+			<section class="page-heading">
+				<div><div class="eyebrow">A little progress, every day</div><h1>Your study desk</h1><p class="subtitle">Ask, explore, and turn your notes into active practice.</p></div>
+				<div class="date-label" id="todayLabel"></div>
+			</section>
+
+			<section class="study-tools" aria-label="Generate study materials">
+				<button class="tool-card" type="button" data-tool="quiz"><span class="tool-icon"><i data-lucide="circle-help"></i></span><span class="tool-copy"><strong>Quick quiz</strong><span>Check what you know</span></span></button>
+				<button class="tool-card" type="button" data-tool="flashcards"><span class="tool-icon coral"><i data-lucide="layers-2"></i></span><span class="tool-copy"><strong>Flashcards</strong><span>Review key concepts</span></span></button>
+				<button class="tool-card" type="button" data-tool="test"><span class="tool-icon yellow"><i data-lucide="list-checks"></i></span><span class="tool-copy"><strong>Practice test</strong><span>Mixed question types</span></span></button>
+				<button class="tool-card" type="button" data-tool="exam"><span class="tool-icon blue"><i data-lucide="file-check-2"></i></span><span class="tool-copy"><strong>Mock exam</strong><span>Build exam conditions</span></span></button>
+			</section>
+
+			<section class="workspace">
+				<div class="panel chat-panel">
+					<div class="panel-head"><div class="panel-heading"><i data-lucide="sparkles"></i>Study with your tutor</div><span class="small-muted" id="chatHint">Local model · private by design</span></div>
+					<div class="chat-log" id="chatLog" aria-live="polite">
+						<div class="welcome" id="welcome">
+							<h2 class="welcome-title">What are you working on?</h2>
+							<p>Load the local AI, add your notes, then ask for an explanation or build a set of practice materials.</p>
+							<div class="suggestions">
+								<button class="suggestion" type="button" data-prompt="Explain the most important ideas in my uploaded notes in simple language.">Explain my notes</button>
+								<button class="suggestion" type="button" data-prompt="Help me make a study plan from my material. Ask me one question at a time.">Make a study plan</button>
+								<button class="suggestion" type="button" data-prompt="What are the three most important concepts I should understand from my material?">Find key concepts</button>
+							</div>
+						</div>
+					</div>
+					<div class="composer-wrap">
+						<form class="composer" id="chatForm">
+							<textarea id="messageInput" rows="1" aria-label="Message your AI tutor" placeholder="Ask a question or tell your tutor what to make..."></textarea>
+							<button class="send-button" id="sendButton" type="submit" aria-label="Send message" disabled><i data-lucide="arrow-up"></i></button>
+						</form>
+						<div class="composer-note"><span>Enter to send · Shift + Enter for a new line</span><span>Responses can contain mistakes. Check important facts.</span></div>
+					</div>
+				</div>
+
+				<aside class="panel sources-panel">
+					<div class="panel-head"><div class="panel-heading"><i data-lucide="notebook-tabs"></i>Study material</div><span class="small-muted" id="sourceCount">0 files</span></div>
+					<div class="source-content">
+						<label class="dropzone" id="dropzone" for="fileInput">
+							<span class="upload-mark"><i data-lucide="upload-cloud"></i></span>
+							<strong>Drop notes here or browse</strong>
+							<p>Photos, text, Markdown, or PDF · up to 20 MB</p>
+							<input id="fileInput" type="file" accept=".txt,.md,.markdown,.pdf,.jpg,.jpeg,.png,.webp,text/plain,text/markdown,application/pdf,image/jpeg,image/png,image/webp" multiple>
+						</label>
+						<div class="source-title-row"><span>YOUR FILES</span><span class="source-count" id="sourceCountInline">0 added</span></div>
+						<div class="source-list" id="sourceList"><div class="empty-source">Your study materials will appear here.</div></div>
+					</div>
+					<div class="source-callout"><strong>Grounded in your notes.</strong> Your tutor uses uploaded material as context for explanations and generated practice.</div>
+				</aside>
+			</section>
+		</main>
+	</div>
+	<dialog class="auth-dialog" id="authDialog" aria-labelledby="authTitle">
+		<div class="auth-content">
+			<div class="auth-heading">
+				<div><h2 id="authTitle">Sync your study history</h2><p id="authDescription">Sign in to save conversations and open them on another device.</p></div>
+				<button class="auth-close" id="authClose" type="button" aria-label="Close"><i data-lucide="x"></i></button>
+			</div>
+			<form class="auth-form" id="authForm">
+				<label>Email address<input id="authEmail" type="email" autocomplete="email" required></label>
+				<label>Password<input id="authPassword" type="password" autocomplete="current-password" minlength="8" required></label>
+				<button class="button primary" id="authSubmit" type="submit">Sign in</button>
+			</form>
+			<div class="account-info" id="accountInfo" hidden>Signed in as<span id="accountEmail"></span></div>
+			<p class="auth-message" id="authMessage" role="status"></p>
+			<div class="auth-footer"><button class="text-button" id="authModeButton" type="button">Create an account</button><button class="text-button" id="signOutButton" type="button" hidden>Sign out</button></div>
+		</div>
+	</dialog>
+	<div class="toast" id="toast" role="status"></div>
+
+	<script type="module">
+		const MODEL_ID = "Llama-3.2-1B-Instruct-q4f32_1-MLC";
+		const MAX_FILE_BYTES = 20 * 1024 * 1024;
+		const MAX_CONTEXT_CHARS = 14000;
+		const files = new Map();
+		const conversation = [];
+		const SUPABASE_URL = window.STUDYROOM_SUPABASE_URL || "YOUR_SUPABASE_PROJECT_URL";
+		const SUPABASE_ANON_KEY = window.STUDYROOM_SUPABASE_ANON_KEY || "YOUR_SUPABASE_ANON_KEY";
+		const welcomeTemplate = document.querySelector("#welcome").cloneNode(true);
+		let engine = null;
+		let supabase = null;
+		let currentUser = null;
+		let activeConversationId = null;
+		let authMode = "signin";
+		let ocrLibraryPromise;
+		let toastTimer;
+		const elements = {
+			chatLog: document.querySelector("#chatLog"), input: document.querySelector("#messageInput"),
+			form: document.querySelector("#chatForm"), send: document.querySelector("#sendButton"),
+			load: document.querySelector("#loadModel"), status: document.querySelector("#modelStatus"),
+			dot: document.querySelector("#stateDot"), topbar: document.querySelector("#topbar"),
+			progress: document.querySelector("#modelProgress"), list: document.querySelector("#sourceList"),
+			fileInput: document.querySelector("#fileInput"), toast: document.querySelector("#toast")
+		};
+		const cloudElements = {
+			account: document.querySelector("#accountButton"), dialog: document.querySelector("#authDialog"),
+			form: document.querySelector("#authForm"), email: document.querySelector("#authEmail"),
+			password: document.querySelector("#authPassword"), submit: document.querySelector("#authSubmit"),
+			message: document.querySelector("#authMessage"), modeButton: document.querySelector("#authModeButton"),
+			accountInfo: document.querySelector("#accountInfo"), accountEmail: document.querySelector("#accountEmail"),
+		signOut: document.querySelector("#signOutButton"), history: document.querySelector("#historyList")
+		};
+		const prompts = {
+			quiz: "Create a 5-question multiple-choice quiz based on the uploaded study material. Give one question at a time, wait for my answer, then explain why it is right or wrong. If there are no notes, ask me what subject and topic to use.",
+			flashcards: "Create 10 concise flashcards from the uploaded study material. Format each as 'Front: ...' then 'Back: ...'. Focus on useful recall, not trivia. If there are no notes, ask me what subject and topic to use.",
+			test: "Create a practice test from the uploaded study material with 5 multiple-choice, 3 short-answer, and 2 application questions. Put a separate answer key at the end. If there are no notes, ask me what subject and topic to use.",
+			exam: "Create a realistic mock exam based on the uploaded study material: include clear sections, varied question types, point values, and a separate answer key with explanations. If there are no notes, ask me what subject and topic to use."
+		};
+
+		function iconRefresh() { window.lucide?.createIcons(); }
+		function cloudConfigured() {
+			return SUPABASE_URL.startsWith("https://") && !SUPABASE_URL.includes("YOUR_") && SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.includes("YOUR_");
+		}
+		async function ensureSupabase() {
+			if (supabase) return supabase;
+			if (!cloudConfigured()) return null;
+			const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+			supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+			supabase.auth.onAuthStateChange((_event, session) => {
+				setTimeout(() => applyAuthSession(session), 0);
+			});
+			const { data, error } = await supabase.auth.getSession();
+			if (error) throw error;
+			await applyAuthSession(data.session);
+			return supabase;
+		}
+		async function applyAuthSession(session) {
+			const nextUser = session?.user || null;
+			if (currentUser?.id === nextUser?.id) return;
+			const wasSignedIn = Boolean(currentUser);
+			currentUser = nextUser;
+			updateAccountUI();
+			if (currentUser) {
+				if (conversation.length && !activeConversationId) {
+					try { await saveConversation(); } catch (error) { showToast(`History sync failed: ${error.message}`); }
+				}
+				await refreshHistory();
+			} else {
+				renderHistoryMessage("Sign in to sync conversations across devices.");
+				if (wasSignedIn) startNewConversation();
+			}
+		}
+		function updateAccountUI() {
+			const signedIn = Boolean(currentUser);
+			cloudElements.account.innerHTML = signedIn
+				? '<i data-lucide="user-round-check"></i><span>Account</span>'
+				: '<i data-lucide="user-round"></i><span>Sign in</span>';
+			cloudElements.account.setAttribute("aria-label", signedIn ? "Open account" : "Sign in to sync chat history");
+			cloudElements.account.title = signedIn ? currentUser.email : "Sign in to sync chat history";
+			cloudElements.accountInfo.hidden = !signedIn;
+			cloudElements.accountEmail.textContent = signedIn ? currentUser.email : "";
+			cloudElements.signOut.hidden = !signedIn;
+			cloudElements.form.hidden = signedIn || !cloudConfigured();
+			cloudElements.modeButton.hidden = signedIn || !cloudConfigured();
+			if (!cloudConfigured()) {
+				cloudElements.message.textContent = "Cloud history is not configured yet. Add your Supabase project URL and anon key in index.html, then create the database table using SUPABASE_SETUP.md.";
+			} else if (signedIn) {
+				cloudElements.message.textContent = "Your chat history syncs to this account. Uploaded notes and photos stay on this device.";
+			} else {
+				cloudElements.message.textContent = "History syncs only after you sign in.";
+			}
+			iconRefresh();
+		}
+		function renderHistoryMessage(message) {
+			cloudElements.history.replaceChildren();
+			const empty = document.createElement("div");
+			empty.className = "history-empty";
+			empty.textContent = message;
+			cloudElements.history.append(empty);
+		}
+		async function refreshHistory() {
+			if (!supabase || !currentUser) return;
+			const { data, error } = await supabase.from("study_conversations")
+				.select("id,title,updated_at").order("updated_at", { ascending: false }).limit(30);
+			if (error) {
+				renderHistoryMessage("Couldn't load history. Check the Supabase setup.");
+				return;
+			}
+			cloudElements.history.replaceChildren();
+			if (!data.length) {
+				renderHistoryMessage("Your saved chats will appear here.");
+				return;
+			}
+			for (const item of data) {
+				const button = document.createElement("button");
+				button.type = "button";
+				button.className = `history-item${item.id === activeConversationId ? " active" : ""}`;
+				button.dataset.conversationId = item.id;
+				const title = document.createElement("strong");
+				title.textContent = item.title;
+				const date = document.createElement("span");
+				date.textContent = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(new Date(item.updated_at));
+				button.append(title, date);
+				cloudElements.history.append(button);
+			}
+		}
+		async function saveConversation() {
+			if (!supabase || !currentUser || !conversation.length) return;
+			const firstUserMessage = conversation.find(message => message.role === "user")?.content || "Study session";
+			const title = firstUserMessage.replace(/\s+/g, " ").trim().slice(0, 54) || "Study session";
+			const values = { user_id: currentUser.id, title, messages: [...conversation], updated_at: new Date().toISOString() };
+			let error;
+			if (activeConversationId) {
+				({ error } = await supabase.from("study_conversations").update(values).eq("id", activeConversationId));
+			} else {
+				const result = await supabase.from("study_conversations").insert(values).select("id").single();
+				error = result.error;
+				if (!error) activeConversationId = result.data.id;
+			}
+			if (error) throw error;
+			await refreshHistory();
+		}
+		async function openConversation(id) {
+			if (!supabase || !currentUser) return;
+			const { data, error } = await supabase.from("study_conversations").select("id,messages").eq("id", id).single();
+			if (error) {
+				showToast(`Couldn't open this conversation: ${error.message}`);
+				return;
+			}
+			activeConversationId = data.id;
+			conversation.splice(0, conversation.length, ...(Array.isArray(data.messages) ? data.messages : []));
+			elements.chatLog.replaceChildren();
+			for (const message of conversation) addMessage(message.role, message.content);
+			if (!conversation.length) elements.chatLog.append(welcomeTemplate.cloneNode(true));
+			await refreshHistory();
+			document.querySelector("#sidebar").classList.remove("open");
+		}
+		function startNewConversation() {
+			activeConversationId = null;
+			conversation.length = 0;
+			elements.chatLog.replaceChildren(welcomeTemplate.cloneNode(true));
+			elements.chatLog.scrollTop = 0;
+			if (supabase && currentUser) refreshHistory();
+			iconRefresh();
+		}
+		function showToast(message) {
+			elements.toast.textContent = message;
+			elements.toast.classList.add("show");
+			clearTimeout(toastTimer);
+			toastTimer = setTimeout(() => elements.toast.classList.remove("show"), 3200);
+		}
+		function setModelState(label, state = "") {
+			elements.status.textContent = label;
+			elements.dot.className = `state-dot ${state}`;
+		}
+		function setBusy(busy) {
+			elements.send.disabled = busy || !engine || !elements.input.value.trim();
+			elements.load.disabled = busy;
+			document.querySelectorAll("[data-tool]").forEach(button => button.disabled = busy);
+		}
+		function addMessage(role, text) {
+			document.querySelector("#welcome")?.remove();
+			const article = document.createElement("article");
+			article.className = `message ${role}`;
+			const avatar = document.createElement("span");
+			avatar.className = "avatar";
+			const avatarIcon = document.createElement("i");
+			avatarIcon.setAttribute("data-lucide", role === "user" ? "user-round" : "sparkles");
+			avatar.append(avatarIcon);
+			const bubble = document.createElement("div");
+			bubble.className = "bubble";
+			bubble.textContent = text;
+			article.append(avatar, bubble);
+			elements.chatLog.append(article);
+			elements.chatLog.scrollTop = elements.chatLog.scrollHeight;
+			iconRefresh();
+			return bubble;
+		}
+		function addThinkingMessage() {
+			document.querySelector("#welcome")?.remove();
+			const article = document.createElement("article");
+			article.className = "message assistant";
+			const avatar = document.createElement("span");
+			avatar.className = "avatar";
+			const avatarIcon = document.createElement("i");
+			avatarIcon.setAttribute("data-lucide", "sparkles");
+			avatar.append(avatarIcon);
+			const content = document.createElement("div");
+			content.className = "assistant-content";
+			const status = document.createElement("div");
+			status.className = "thinking-status";
+			const statusText = document.createElement("span");
+			statusText.textContent = "Reviewing your question and notes";
+			const dots = document.createElement("span");
+			dots.className = "thinking-dots";
+			dots.setAttribute("aria-label", "Thinking");
+			for (let index = 0; index < 3; index++) dots.append(document.createElement("span"));
+			const timer = document.createElement("span");
+			timer.className = "thinking-timer";
+			timer.textContent = "0:00";
+			timer.setAttribute("aria-label", "Time thinking");
+			status.append(statusText, dots, timer);
+			const details = document.createElement("details");
+			details.className = "thinking-details";
+			const summary = document.createElement("summary");
+			const summaryIcon = document.createElement("i");
+			summaryIcon.setAttribute("data-lucide", "list-checks");
+			summary.append(summaryIcon, document.createTextNode("Live activity"));
+			const activity = document.createElement("ol");
+			activity.className = "activity-list";
+			activity.setAttribute("aria-live", "polite");
+			details.append(summary, activity);
+			const answer = document.createElement("div");
+			answer.className = "bubble";
+			content.append(status, details, answer);
+			article.append(avatar, content);
+			elements.chatLog.append(article);
+			elements.chatLog.scrollTop = elements.chatLog.scrollHeight;
+			iconRefresh();
+			const startedAt = Date.now();
+			const updateTimer = () => {
+				const seconds = Math.floor((Date.now() - startedAt) / 1000);
+				timer.textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+			};
+			const timerId = setInterval(updateTimer, 250);
+			const addActivity = message => {
+				const item = document.createElement("li");
+				item.textContent = message;
+				activity.append(item);
+			};
+			addActivity("Reading your question and available study material.");
+			return {
+				answer,
+				setStatus: message => { statusText.textContent = message; },
+				addActivity,
+				finish: message => {
+					clearInterval(timerId);
+					updateTimer();
+					dots.remove();
+					statusText.textContent = message;
+					addActivity(`Finished in ${timer.textContent}.`);
+				}
+			};
+		}
+		function contextPrompt() {
+			const content = [...files.values()].map(file => `--- ${file.name} ---\n${file.text}`).join("\n\n").slice(0, MAX_CONTEXT_CHARS);
+			return `You are a thoughtful, accurate study tutor. Explain concepts clearly, encourage active recall, and adapt to the learner. Use the uploaded source material when relevant; distinguish source facts from your own knowledge and say when the notes do not contain an answer.\n\n${content ? `UPLOADED STUDY MATERIAL:\n${content}` : "No study files have been uploaded. Ask for a topic when the user requests source-specific work."}`;
+		}
+		async function loadModel() {
+			if (engine) return;
+			if (!navigator.gpu) {
+				setModelState("WebGPU not available");
+				showToast("Use an up-to-date Chrome or Edge browser on a WebGPU-capable device.");
+				return;
+			}
+			elements.load.disabled = true;
+			elements.load.innerHTML = '<i data-lucide="loader-circle"></i><span>Starting…</span>';
+			elements.topbar.classList.add("loading");
+			setModelState("Downloading model", "loading");
+			iconRefresh();
+			try {
+				const { CreateMLCEngine } = await import("https://esm.run/@mlc-ai/web-llm");
+				engine = await CreateMLCEngine(MODEL_ID, {
+					initProgressCallback: progress => {
+						const percent = Math.max(0, Math.min(100, Math.round((progress.progress || 0) * 100)));
+						elements.progress.style.width = `${percent}%`;
+						setModelState(progress.text || `Preparing model ${percent}%`, "loading");
+					}
+				});
+				setModelState("Local AI ready", "ready");
+				elements.load.innerHTML = '<i data-lucide="check"></i><span>AI ready</span>';
+				elements.send.disabled = !elements.input.value.trim();
+				document.querySelector("#chatHint").textContent = "Running on this device";
+				showToast("Local AI is ready. Your prompts stay in this browser.");
+			} catch (error) {
+				engine = null;
+				setModelState("Could not load AI");
+				elements.load.disabled = false;
+				elements.load.innerHTML = '<i data-lucide="cpu"></i><span>Try loading again</span>';
+				showToast(error?.message?.slice(0, 140) || "Model download failed. Check your connection and browser support.");
+			} finally {
+				elements.topbar.classList.remove("loading");
+				elements.progress.style.width = "0";
+				iconRefresh();
+			}
+		}
+		async function sendMessage(text) {
+			const value = text.trim();
+			if (!value) return;
+			if (!engine) {
+				showToast("Load the local AI before starting a study session.");
+				return;
+			}
+			elements.input.value = "";
+			elements.input.style.height = "auto";
+			addMessage("user", value);
+			conversation.push({ role: "user", content: value });
+			const thinking = addThinkingMessage();
+			setBusy(true);
+			try {
+				if (currentUser) {
+					thinking.setStatus("Saving your question to history");
+					thinking.addActivity("Syncing this conversation to your account.");
+					try { await saveConversation(); }
+					catch (error) { showToast(`Couldn't sync this chat: ${error.message}`); }
+				}
+				const response = await engine.chat.completions.create({
+					messages: [{ role: "system", content: contextPrompt() }, ...conversation.slice(-16)],
+					temperature: 0.65,
+					stream: true
+				});
+				thinking.setStatus("Generating a response on this device");
+				thinking.addActivity("Generating an answer with the local model.");
+				let reply = "";
+				for await (const chunk of response) {
+					const token = chunk.choices?.[0]?.delta?.content || "";
+					if (!token) continue;
+					if (!reply) {
+						thinking.setStatus("Writing your answer");
+						thinking.addActivity("Streaming the answer as it is written.");
+					}
+					reply += token;
+					thinking.answer.textContent = reply;
+					elements.chatLog.scrollTop = elements.chatLog.scrollHeight;
+				}
+				reply = reply.trim() || "I couldn't form a response. Try asking in a different way.";
+				thinking.answer.textContent = reply;
+				conversation.push({ role: "assistant", content: reply });
+				if (currentUser) {
+					thinking.setStatus("Saving your reply to history");
+					thinking.addActivity("Syncing the finished reply to your account.");
+					try { await saveConversation(); }
+					catch (error) { showToast(`Couldn't sync this reply: ${error.message}`); }
+				}
+				thinking.finish("Finished");
+			} catch (error) {
+				thinking.answer.textContent = `I hit a local generation error: ${error?.message || "unknown error"}. Try a shorter prompt or reload the page.`;
+				thinking.finish("Stopped");
+			} finally {
+				setBusy(false);
+				elements.send.disabled = !elements.input.value.trim();
+				elements.chatLog.scrollTop = elements.chatLog.scrollHeight;
+			}
+		}
+		async function readFile(file) {
+			if (file.size > MAX_FILE_BYTES) throw new Error("File is larger than 20 MB.");
+			const extension = file.name.split(".").pop().toLowerCase();
+			const isImage = ["jpg", "jpeg", "png", "webp"].includes(extension) || ["image/jpeg", "image/png", "image/webp"].includes(file.type);
+			let text;
+			if (isImage) {
+				showToast(`Reading text from ${file.name}…`);
+				if (!ocrLibraryPromise) {
+					ocrLibraryPromise = new Promise((resolve, reject) => {
+						const script = document.createElement("script");
+						script.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
+						script.onload = () => resolve(window.Tesseract);
+						script.onerror = () => reject(new Error("Could not load the on-device photo reader. Check your internet connection and try again."));
+						document.head.append(script);
+					});
+				}
+				const tesseract = await ocrLibraryPromise;
+				const worker = await tesseract.createWorker("eng", 1);
+				try {
+					const result = await worker.recognize(file);
+					text = result.data.text;
+				} finally {
+					await worker.terminate();
+				}
+			} else if (extension === "pdf" || file.type === "application/pdf") {
+				const pdfjs = await import("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs");
+				pdfjs.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs";
+				const document = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
+				const pages = [];
+				for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber++) {
+					const page = await document.getPage(pageNumber);
+					const content = await page.getTextContent();
+					pages.push(content.items.map(item => item.str).join(" "));
+					if (pages.join("\n").length > MAX_CONTEXT_CHARS * 3) break;
+				}
+				text = pages.join("\n");
+			} else if (["txt", "md", "markdown"].includes(extension) || file.type.startsWith("text/")) {
+				text = await file.text();
+			} else {
+				throw new Error("Use a .txt, .md, text-based .pdf, or JPG, PNG, or WebP image.");
+			}
+			if (!text.trim()) throw new Error(isImage ? "No text found. Try a clearer, well-lit photo with the notes in focus." : "No readable text found in that file.");
+			return { id: crypto.randomUUID(), name: file.name, text: text.slice(0, MAX_CONTEXT_CHARS * 3), bytes: file.size, isImage };
+		}
+		function renderFiles() {
+			const count = files.size;
+			document.querySelector("#sourceCount").textContent = `${count} ${count === 1 ? "file" : "files"}`;
+			document.querySelector("#sourceCountInline").textContent = `${count} added`;
+			elements.list.replaceChildren();
+			if (!count) {
+				const empty = document.createElement("div");
+				empty.className = "empty-source";
+				empty.textContent = "Your study materials will appear here.";
+				elements.list.append(empty);
+				return;
+			}
+			for (const file of files.values()) {
+				const row = document.createElement("div");
+				row.className = "source-item";
+				const icon = document.createElement("span");
+				icon.className = "file-icon";
+				icon.innerHTML = '<i data-lucide="file-text"></i>';
+				const meta = document.createElement("span");
+				meta.className = "file-meta";
+				const name = document.createElement("strong");
+				name.textContent = file.name;
+				const details = document.createElement("span");
+				details.textContent = `${(file.bytes / 1024).toFixed(0)} KB · ${file.isImage ? "photo text extracted" : "ready to study"}`;
+				meta.append(name, details);
+				const remove = document.createElement("button");
+				remove.className = "remove-file";
+				remove.type = "button";
+				remove.setAttribute("aria-label", `Remove ${file.name}`);
+				remove.innerHTML = '<i data-lucide="x"></i>';
+				remove.addEventListener("click", () => { files.delete(file.id); renderFiles(); });
+				row.append(icon, meta, remove);
+				elements.list.append(row);
+			}
+			iconRefresh();
+		}
+		async function addFiles(fileList) {
+			for (const file of fileList) {
+				try {
+					const data = await readFile(file);
+					files.set(data.id, data);
+					showToast(`Added ${file.name} to your study material.`);
+				} catch (error) { showToast(error.message); }
+			}
+			elements.fileInput.value = "";
+			renderFiles();
+		}
+
+		elements.load.addEventListener("click", loadModel);
+		cloudElements.account.addEventListener("click", async () => {
+			cloudElements.message.textContent = "Connecting to history service…";
+			cloudElements.dialog.showModal();
+			try {
+				if (!cloudConfigured()) updateAccountUI();
+				else {
+					await ensureSupabase();
+					updateAccountUI();
+				}
+			} catch (error) { cloudElements.message.textContent = `Couldn't connect to history service: ${error.message}`; }
+		});
+		document.querySelector("#authClose").addEventListener("click", () => cloudElements.dialog.close());
+		cloudElements.modeButton.addEventListener("click", () => {
+			authMode = authMode === "signin" ? "signup" : "signin";
+			cloudElements.submit.textContent = authMode === "signin" ? "Sign in" : "Create account";
+			cloudElements.modeButton.textContent = authMode === "signin" ? "Create an account" : "I already have an account";
+			cloudElements.password.autocomplete = authMode === "signin" ? "current-password" : "new-password";
+			cloudElements.message.textContent = authMode === "signup" ? "Use at least 8 characters. Email confirmation may be required." : "History syncs only after you sign in.";
+		});
+		cloudElements.form.addEventListener("submit", async event => {
+			event.preventDefault();
+			cloudElements.submit.disabled = true;
+			cloudElements.message.textContent = authMode === "signin" ? "Signing in…" : "Creating account…";
+			try {
+				const client = await ensureSupabase();
+				if (!client) throw new Error("Add your Supabase project settings first.");
+				const credentials = { email: cloudElements.email.value.trim(), password: cloudElements.password.value };
+				const result = authMode === "signin"
+					? await client.auth.signInWithPassword(credentials)
+					: await client.auth.signUp(credentials);
+				if (result.error) throw result.error;
+				if (authMode === "signup" && !result.data.session) {
+					cloudElements.message.textContent = "Account created. Check your email to confirm, then sign in here.";
+				} else {
+					cloudElements.message.textContent = "Signed in. Your history is syncing.";
+				}
+			} catch (error) { cloudElements.message.textContent = error.message; }
+			finally { cloudElements.submit.disabled = false; }
+		});
+		cloudElements.signOut.addEventListener("click", async () => {
+			const { error } = await supabase.auth.signOut();
+			if (error) cloudElements.message.textContent = error.message;
+			else cloudElements.dialog.close();
+		});
+		document.querySelector("#newChatButton").addEventListener("click", startNewConversation);
+		cloudElements.history.addEventListener("click", event => {
+			const button = event.target.closest("[data-conversation-id]");
+			if (button) openConversation(button.dataset.conversationId);
+		});
+		elements.chatLog.addEventListener("click", event => {
+			const button = event.target.closest("[data-prompt]");
+			if (button) sendMessage(button.dataset.prompt);
+		});
+		elements.form.addEventListener("submit", event => { event.preventDefault(); sendMessage(elements.input.value); });
+		elements.input.addEventListener("input", () => {
+			elements.input.style.height = "auto";
+			elements.input.style.height = `${Math.min(elements.input.scrollHeight, 110)}px`;
+			elements.send.disabled = !engine || !elements.input.value.trim();
+		});
+		elements.input.addEventListener("keydown", event => {
+			if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); elements.form.requestSubmit(); }
+		});
+		elements.fileInput.addEventListener("change", event => addFiles(event.target.files));
+		const dropzone = document.querySelector("#dropzone");
+		dropzone.addEventListener("dragover", event => { event.preventDefault(); dropzone.classList.add("dragover"); });
+		dropzone.addEventListener("dragleave", () => dropzone.classList.remove("dragover"));
+		dropzone.addEventListener("drop", event => { event.preventDefault(); dropzone.classList.remove("dragover"); addFiles(event.dataTransfer.files); });
+		document.querySelectorAll("[data-tool]").forEach(button => button.addEventListener("click", () => sendMessage(prompts[button.dataset.tool])));
+		document.querySelector("#menuButton").addEventListener("click", () => document.querySelector("#sidebar").classList.toggle("open"));
+		document.querySelectorAll(".nav-link").forEach(link => link.addEventListener("click", () => {
+			document.querySelector("#sidebar").classList.remove("open");
+		}));
+		document.querySelector("#todayLabel").textContent = new Intl.DateTimeFormat(undefined, { weekday: "long", month: "short", day: "numeric" }).format(new Date());
+		updateAccountUI();
+		iconRefresh();
+	</script>
+</body>
+</html>
